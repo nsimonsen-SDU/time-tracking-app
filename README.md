@@ -5,10 +5,10 @@ A Shiny application for tracking time spent on projects and tasks with persisten
 ## Features
 
 - **Active Timer**: Start/stop timers for projects and tasks
-- **Manual Entry**: Add time entries manually with date/time pickers
+- **Manual Entry**: Add time entries manually with date/time pickers (coming soon)
 - **Time Log**: View, filter, and search all time entries
 - **Summary & Reports**: Analyze time spent by project, task, or day
-- **Settings**: Manage projects and tasks
+- **Settings**: Create and manage projects and tasks
 
 ## Installation
 
@@ -64,16 +64,23 @@ Rscript test_data_io.R
 
 ## Current Status
 
-Basic structure is complete with:
+### Completed Features
 - ✅ 5-tab UI layout
 - ✅ Data.table initialization and file I/O
 - ✅ Reactive values setup
 - ✅ Timer start/stop functionality
 - ✅ Data persistence
 - ✅ Active timer detection on startup
+- ✅ **Project creation** - Add new projects from Settings tab
+- ✅ **Task creation** - Add new tasks to existing projects
+- ✅ Automatic validation (no duplicates, non-empty names)
+- ✅ Reactive dropdown updates
 
-Coming soon:
+### Coming Soon
 - Manual entry form submission
-- Edit/delete functionality
-- Project and task management
-- Data export features
+- Edit/delete functionality for time entries
+- CSV/Excel export
+- Data import
+- Advanced reporting and visualizations
+
+See [docs/TODO.md](docs/TODO.md) for the complete feature roadmap.

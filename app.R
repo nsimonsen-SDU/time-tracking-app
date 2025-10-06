@@ -632,15 +632,109 @@ server <- function(input, output, session) {
   })
 
   # ----------------------------------------------------------------------------
-  # Project/Task Management (Placeholder)
+  # Project/Task Management
   # ----------------------------------------------------------------------------
 
+  # Add new project
   observeEvent(input$add_project, {
-    showNotification("Project management functionality coming soon!", type = "message")
+    req(input$new_project_name)
+
+    # Trim whitespace
+    project_name <- trimws(input$new_project_name)
+
+    # Validate: non-empty
+    if (nchar(project_name) == 0) {
+      showNotification("Project name cannot be empty!", type = "error")
+      return()
+    }
+
+    # Validate: not duplicate
+    existing_projects <- unique(rv$time_log$project)
+    if (project_name %in% existing_projects) {
+      showNotification("Project already exists!", type = "warning")
+      return()
+    }
+
+    # Create a dummy entry to add the project to the system
+    # This ensures the project appears in dropdowns
+    new_id <- max(rv$time_log$log_id, 0) + 1
+    dummy_entry <- data.table(
+      log_id = new_id,
+      project = project_name,
+      task = "Initial Task",
+      start_datetime = Sys.time(),
+      end_datetime = Sys.time(),
+      hours = 0,
+      notes = "Auto-generated project entry",
+      entry_type = "manual"
+    )
+
+    # Add to time_log
+    rv$time_log <- rbindlist(list(rv$time_log, dummy_entry), use.names = TRUE)
+    setkey(rv$time_log, log_id)
+
+    # Save
+    save_time_log(rv$time_log)
+
+    # Clear input and show success
+    updateTextInput(session, "new_project_name", value = "")
+    showNotification(paste("Project '", project_name, "' created successfully!", sep = ""),
+                     type = "message")
   })
 
+  # Add new task
   observeEvent(input$add_task, {
-    showNotification("Task management functionality coming soon!", type = "message")
+    req(input$task_project_select, input$new_task_name)
+
+    # Trim whitespace
+    task_name <- trimws(input$new_task_name)
+    project_name <- input$task_project_select
+
+    # Validate: non-empty
+    if (nchar(task_name) == 0) {
+      showNotification("Task name cannot be empty!", type = "error")
+      return()
+    }
+
+    # Validate: project exists
+    existing_projects <- unique(rv$time_log$project)
+    if (!(project_name %in% existing_projects)) {
+      showNotification("Selected project does not exist!", type = "error")
+      return()
+    }
+
+    # Validate: task doesn't already exist for this project
+    existing_tasks <- rv$time_log[project == project_name, unique(task)]
+    if (task_name %in% existing_tasks) {
+      showNotification(paste("Task '", task_name, "' already exists for project '",
+                            project_name, "'!", sep = ""), type = "warning")
+      return()
+    }
+
+    # Create a dummy entry to add the task to the system
+    new_id <- max(rv$time_log$log_id, 0) + 1
+    dummy_entry <- data.table(
+      log_id = new_id,
+      project = project_name,
+      task = task_name,
+      start_datetime = Sys.time(),
+      end_datetime = Sys.time(),
+      hours = 0,
+      notes = "Auto-generated task entry",
+      entry_type = "manual"
+    )
+
+    # Add to time_log
+    rv$time_log <- rbindlist(list(rv$time_log, dummy_entry), use.names = TRUE)
+    setkey(rv$time_log, log_id)
+
+    # Save
+    save_time_log(rv$time_log)
+
+    # Clear input and show success
+    updateTextInput(session, "new_task_name", value = "")
+    showNotification(paste("Task '", task_name, "' added to project '",
+                          project_name, "'!", sep = ""), type = "message")
   })
 
   observeEvent(input$submit_manual, {
