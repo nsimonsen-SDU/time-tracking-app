@@ -202,21 +202,27 @@ ui <- fluidPage(
       h3("View and Edit Time Entries"),
 
       fluidRow(
-        column(4,
+        column(3,
           dateInput("filter_start_date",
                    "From:",
                    value = Sys.Date() - 7,
                    width = "100%")
         ),
-        column(4,
+        column(3,
           dateInput("filter_end_date",
                    "To:",
                    value = Sys.Date(),
                    width = "100%")
         ),
-        column(4,
+        column(3,
           selectInput("filter_project",
                      "Filter by Project:",
+                     choices = c("All" = "all"),
+                     width = "100%")
+        ),
+        column(3,
+          selectInput("filter_task",
+                     "Filter by Task:",
                      choices = c("All" = "all"),
                      width = "100%")
         )
@@ -226,7 +232,17 @@ ui <- fluidPage(
       DTOutput("time_log_table"),
       br(),
 
-      p("Edit and delete functionality coming soon...")
+      fluidRow(
+        column(6,
+          downloadButton("download_csv",
+                        "Download as CSV",
+                        icon = icon("download"),
+                        class = "btn-success")
+        ),
+        column(6,
+          p("Edit and delete functionality coming soon...")
+        )
+      )
     ),
 
     # -------------------------------------------------------------------------
@@ -236,6 +252,35 @@ ui <- fluidPage(
       "Summary & Reports",
       br(),
       h3("Time Summary Statistics"),
+
+      # Current Period Summaries
+      fluidRow(
+        column(4,
+          div(class = "well",
+            h4(icon("calendar-week"), " This Week"),
+            h2(textOutput("current_week_hours"), style = "color: #3c8dbc;"),
+            p("Total hours tracked this week")
+          )
+        ),
+        column(4,
+          div(class = "well",
+            h4(icon("calendar"), " This Month"),
+            h2(textOutput("current_month_hours"), style = "color: #00a65a;"),
+            p("Total hours tracked this month")
+          )
+        ),
+        column(4,
+          div(class = "well",
+            h4(icon("chart-line"), " All Time"),
+            h2(textOutput("all_time_hours"), style = "color: #f39c12;"),
+            p("Total hours tracked")
+          )
+        )
+      ),
+
+      br(),
+      hr(),
+      h3("Custom Date Range Reports"),
 
       fluidRow(
         column(6,
@@ -403,6 +448,26 @@ server <- function(input, output, session) {
     updateSelectInput(session, "manual_task", choices = tasks)
   })
 
+  # Update filter_task dropdown based on selected project
+  observe({
+    req(rv$time_log)
+
+    if (input$filter_project == "all") {
+      # Show all tasks if "All" projects selected
+      tasks <- unique(rv$time_log$task)
+    } else {
+      # Show tasks for selected project only
+      tasks <- rv$time_log[project == input$filter_project, unique(task)]
+    }
+
+    if (length(tasks) == 0) {
+      tasks <- character(0)
+    }
+
+    updateSelectInput(session, "filter_task",
+                     choices = c("All" = "all", sort(tasks)))
+  })
+
   # Enable/disable timer buttons
   observe({
     if (has_active_timer()) {
@@ -538,6 +603,11 @@ server <- function(input, output, session) {
       filtered <- filtered[project == input$filter_project]
     }
 
+    # Apply task filter
+    if (!is.null(input$filter_task) && input$filter_task != "all") {
+      filtered <- filtered[task == input$filter_task]
+    }
+
     # Format for display
     display_dt <- filtered[, .(
       ID = log_id,
@@ -555,6 +625,52 @@ server <- function(input, output, session) {
   # ----------------------------------------------------------------------------
   # Output: Summary Tables
   # ----------------------------------------------------------------------------
+
+  # Current week hours
+  output$current_week_hours <- renderText({
+    req(rv$time_log)
+
+    current_week_data <- rv$time_log[week(start_datetime) == week(Sys.Date()) &
+                                     year(start_datetime) == year(Sys.Date()) &
+                                     !is.na(end_datetime),
+                                     .(total_hours = sum(hours, na.rm = TRUE))]
+
+    if (nrow(current_week_data) == 0 || current_week_data$total_hours == 0) {
+      return("0.0 hrs")
+    }
+
+    paste0(round(current_week_data$total_hours, 1), " hrs")
+  })
+
+  # Current month hours
+  output$current_month_hours <- renderText({
+    req(rv$time_log)
+
+    current_month_data <- rv$time_log[month(start_datetime) == month(Sys.Date()) &
+                                      year(start_datetime) == year(Sys.Date()) &
+                                      !is.na(end_datetime),
+                                      .(total_hours = sum(hours, na.rm = TRUE))]
+
+    if (nrow(current_month_data) == 0 || current_month_data$total_hours == 0) {
+      return("0.0 hrs")
+    }
+
+    paste0(round(current_month_data$total_hours, 1), " hrs")
+  })
+
+  # All time hours
+  output$all_time_hours <- renderText({
+    req(rv$time_log)
+
+    all_time_data <- rv$time_log[!is.na(end_datetime),
+                                 .(total_hours = sum(hours, na.rm = TRUE))]
+
+    if (nrow(all_time_data) == 0 || all_time_data$total_hours == 0) {
+      return("0.0 hrs")
+    }
+
+    paste0(round(all_time_data$total_hours, 1), " hrs")
+  })
 
   output$summary_by_project <- renderDT({
     req(rv$time_log)
@@ -737,9 +853,132 @@ server <- function(input, output, session) {
                           project_name, "'!", sep = ""), type = "message")
   })
 
+  # Manual entry form submission
   observeEvent(input$submit_manual, {
-    showNotification("Manual entry functionality coming soon!", type = "message")
+    req(input$manual_project, input$manual_task,
+        input$manual_start_date, input$manual_start_time,
+        input$manual_end_date, input$manual_end_time)
+
+    # Parse date + time inputs into POSIXct
+    tryCatch({
+      start_dt <- as.POSIXct(paste(input$manual_start_date, input$manual_start_time),
+                            format = "%Y-%m-%d %H:%M")
+      end_dt <- as.POSIXct(paste(input$manual_end_date, input$manual_end_time),
+                          format = "%Y-%m-%d %H:%M")
+
+      # Validate: check for NA (invalid time format)
+      if (is.na(start_dt) || is.na(end_dt)) {
+        showNotification("Invalid time format. Please use HH:MM format (e.g., 09:30).",
+                        type = "error")
+        return()
+      }
+
+      # Validate: end_datetime > start_datetime
+      if (end_dt <= start_dt) {
+        showNotification("End time must be after start time!", type = "error")
+        return()
+      }
+
+      # Calculate hours automatically
+      hours_calc <- as.numeric(difftime(end_dt, start_dt, units = "hours"))
+
+      # Create new manual entry
+      new_id <- max(rv$time_log$log_id, 0) + 1
+      new_entry <- data.table(
+        log_id = new_id,
+        project = input$manual_project,
+        task = input$manual_task,
+        start_datetime = start_dt,
+        end_datetime = end_dt,
+        hours = hours_calc,
+        notes = trimws(input$manual_notes),
+        entry_type = "manual"
+      )
+
+      # Add to time_log
+      rv$time_log <- rbindlist(list(rv$time_log, new_entry), use.names = TRUE)
+      setkey(rv$time_log, log_id)
+
+      # Save
+      save_time_log(rv$time_log)
+
+      # Clear form after submission
+      updateTextInput(session, "manual_start_time", value = "09:00")
+      updateTextInput(session, "manual_end_time", value = "10:00")
+      updateTextAreaInput(session, "manual_notes", value = "")
+      updateDateInput(session, "manual_start_date", value = Sys.Date())
+      updateDateInput(session, "manual_end_date", value = Sys.Date())
+
+      # Show confirmation notification
+      showNotification(paste("Manual entry added successfully! (",
+                            round(hours_calc, 2), " hours)", sep = ""),
+                      type = "message")
+    }, error = function(e) {
+      showNotification(paste("Error creating manual entry:", e$message),
+                      type = "error")
+    })
   })
+
+  # ----------------------------------------------------------------------------
+  # CSV Export
+  # ----------------------------------------------------------------------------
+
+  output$download_csv <- downloadHandler(
+    filename = function() {
+      paste0("time_log_", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      req(rv$time_log)
+
+      # Get filtered data (same logic as time_log_table)
+      filtered <- rv$time_log[!is.na(end_datetime)]
+
+      if (nrow(filtered) == 0) {
+        # Create empty file with headers if no data
+        empty_dt <- data.table(
+          log_id = integer(),
+          project = character(),
+          task = character(),
+          start_datetime = character(),
+          end_datetime = character(),
+          hours = numeric(),
+          notes = character(),
+          entry_type = character()
+        )
+        fwrite(empty_dt, file)
+        return()
+      }
+
+      # Apply date filter
+      filtered <- filtered[as.Date(start_datetime) >= input$filter_start_date &
+                          as.Date(start_datetime) <= input$filter_end_date]
+
+      # Apply project filter
+      if (input$filter_project != "all") {
+        filtered <- filtered[project == input$filter_project]
+      }
+
+      # Apply task filter
+      if (!is.null(input$filter_task) && input$filter_task != "all") {
+        filtered <- filtered[task == input$filter_task]
+      }
+
+      # Format timestamps for readability
+      export_dt <- filtered[, .(
+        log_id = log_id,
+        project = project,
+        task = task,
+        start_datetime = format(start_datetime, "%Y-%m-%d %H:%M:%S"),
+        end_datetime = format(end_datetime, "%Y-%m-%d %H:%M:%S"),
+        hours = round(hours, 2),
+        notes = notes,
+        entry_type = entry_type
+      )]
+
+      # Write to CSV using data.table's fast fwrite
+      fwrite(export_dt, file)
+    }
+  )
 }
 
 # ==============================================================================

@@ -5,7 +5,7 @@
 
 ## Current Implementation Status
 
-### ✅ Completed Features (Phase 1 + Partial Phase 2)
+### ✅ Completed Features (Phase 1 & 2 Complete, Phase 4 Partial)
 - [x] Core timer functionality (start/stop)
 - [x] Basic data storage with data.table
 - [x] Active timer persists across app restarts
@@ -18,6 +18,10 @@
 - [x] Auto-save on all data modifications
 - [x] **Project creation from Settings tab** (Phase 2)
 - [x] **Task creation from Settings tab** (Phase 2)
+- [x] **Manual entry form submission** (Phase 2)
+- [x] **CSV export for Time Log** (Phase 4)
+- [x] **Task filter for Time Log** (Phase 4)
+- [x] **Weekly/Monthly summary statistics** (Phase 4)
 
 ---
 
@@ -37,53 +41,49 @@
 
 **Implementation:** See `app.R` lines 638-738. Creates zero-hour entries to register projects/tasks in the system.
 
-#### 2. Manual Entry Form Submission
-- [ ] Parse date + time inputs into POSIXct
-- [ ] Validate end_datetime > start_datetime
-- [ ] Calculate hours automatically
-- [ ] Add to time_log with entry_type = "manual"
-- [ ] Clear form after submission
-- [ ] Show confirmation notification
+#### 2. ✅ Manual Entry Form Submission (COMPLETED)
+- [x] Parse date + time inputs into POSIXct
+- [x] Validate end_datetime > start_datetime
+- [x] Validate time format (HH:MM)
+- [x] Calculate hours automatically
+- [x] Add to time_log with entry_type = "manual"
+- [x] Clear form after submission
+- [x] Show confirmation notification with hours
+- [x] Error handling with try-catch
 
-**Implementation Hint:**
-```r
-start_dt <- as.POSIXct(paste(input$manual_start_date, input$manual_start_time))
-end_dt <- as.POSIXct(paste(input$manual_end_date, input$manual_end_time))
-```
+**Implementation:** See `app.R` lines 756-820. Parses date/time, validates, calculates hours, and saves to time_log.
 
-#### 3. CSV Export for Time Log
-- [ ] Add download button to Time Log tab
-- [ ] Use `downloadHandler()` to export filtered data
-- [ ] Include all relevant columns
-- [ ] Format timestamps for readability
+#### 3. ✅ CSV Export for Time Log (COMPLETED)
+- [x] Add download button to Time Log tab
+- [x] Use `downloadHandler()` to export filtered data
+- [x] Include all relevant columns
+- [x] Format timestamps for readability ("%Y-%m-%d %H:%M:%S")
+- [x] Respect current filters (date, project, task)
+- [x] Use data.table's fast fwrite()
+- [x] Handle empty data gracefully
 
-**Implementation Hint:**
-```r
-downloadHandler(
-  filename = function() { paste0("time_log_", Sys.Date(), ".csv") },
-  content = function(file) { fwrite(filtered_data, file) }
-)
-```
+**Implementation:** See `app.R` lines 822-905. Downloads filtered time log as CSV with formatted timestamps.
 
-#### 4. Add Task Filter to Time Log Tab
-- [ ] Add task filter dropdown in UI
-- [ ] Update filtering logic to include task
-- [ ] Make task dropdown depend on selected project
-- [ ] Add "All tasks" option
+#### 4. ✅ Add Task Filter to Time Log Tab (COMPLETED)
+- [x] Add task filter dropdown in UI (4-column layout)
+- [x] Update filtering logic to include task
+- [x] Make task dropdown depend on selected project
+- [x] Add "All tasks" option
+- [x] Update both time_log_table and CSV export
+- [x] Dynamic task list updates based on project selection
 
-#### 5. Weekly/Monthly Summary Statistics
-- [ ] Add summary boxes for current week
-- [ ] Add summary boxes for current month
-- [ ] Use lubridate `week()` and `month()` functions
-- [ ] Display on Summary tab or Active Timer tab
+**Implementation:** See `app.R` lines 204-229 (UI), 422-440 (reactive dropdown), 577-580 & 887-889 (filtering).
 
-**Implementation Hint:**
-```r
-current_week <- time_log[week(start_datetime) == week(Sys.Date()) &
-                         year(start_datetime) == year(Sys.Date()) &
-                         !is.na(end_datetime),
-                         .(total_hours = sum(hours, na.rm = TRUE))]
-```
+#### 5. ✅ Weekly/Monthly Summary Statistics (COMPLETED)
+- [x] Add summary boxes for current week
+- [x] Add summary boxes for current month
+- [x] Add all-time hours summary
+- [x] Use lubridate `week()` and `month()` functions
+- [x] Display on Summary tab with styled boxes
+- [x] Real-time reactive updates
+- [x] Color-coded display (blue/green/orange)
+
+**Implementation:** See `app.R` lines 256-279 (UI with styled boxes), 629-673 (calculations using lubridate).
 
 ---
 

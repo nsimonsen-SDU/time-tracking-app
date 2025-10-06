@@ -4,11 +4,12 @@ A Shiny application for tracking time spent on projects and tasks with persisten
 
 ## Features
 
-- **Active Timer**: Start/stop timers for projects and tasks
-- **Manual Entry**: Add time entries manually with date/time pickers (coming soon)
-- **Time Log**: View, filter, and search all time entries
-- **Summary & Reports**: Analyze time spent by project, task, or day
+- **Active Timer**: Start/stop timers for projects and tasks with live elapsed time
+- **Manual Entry**: Add time entries manually with date/time validation
+- **Time Log**: View, filter (by date, project, task), and export time entries
+- **Summary & Reports**: Track current week/month hours and analyze historical data
 - **Settings**: Create and manage projects and tasks
+- **CSV Export**: Download filtered time logs for external analysis
 
 ## Installation
 
@@ -65,22 +66,34 @@ Rscript test_data_io.R
 ## Current Status
 
 ### Completed Features
+
+**Phase 1 - Core Functionality:**
 - ✅ 5-tab UI layout
 - ✅ Data.table initialization and file I/O
 - ✅ Reactive values setup
 - ✅ Timer start/stop functionality
 - ✅ Data persistence
 - ✅ Active timer detection on startup
+
+**Phase 2 - Data Entry & Management:**
 - ✅ **Project creation** - Add new projects from Settings tab
 - ✅ **Task creation** - Add new tasks to existing projects
-- ✅ Automatic validation (no duplicates, non-empty names)
+- ✅ **Manual entry** - Add time entries with date/time validation
+- ✅ Automatic validation (no duplicates, non-empty names, time format)
 - ✅ Reactive dropdown updates
 
+**Phase 4 - Enhanced Reporting:**
+- ✅ **CSV export** - Download filtered time logs
+- ✅ **Task filtering** - Filter by project and task
+- ✅ **Weekly/Monthly summaries** - Current week, month, and all-time hours
+- ✅ Summary reports by project, task, and day
+- ✅ Custom date range filtering
+
 ### Coming Soon
-- Manual entry form submission
-- Edit/delete functionality for time entries
-- CSV/Excel export
-- Data import
-- Advanced reporting and visualizations
+- Edit/delete functionality for time entries (Phase 3)
+- Excel export with formatting (Phase 5)
+- Data import (Phase 5)
+- Visualizations and charts (Phase 4)
+- Dynamic task dropdowns based on project (Phase 2)
 
 See [docs/TODO.md](docs/TODO.md) for the complete feature roadmap.
