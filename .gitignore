@@ -1,0 +1,19 @@
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# Shiny
+rsconnect/
+
+# Data (optional - remove if you want to track test data)
+# app_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
