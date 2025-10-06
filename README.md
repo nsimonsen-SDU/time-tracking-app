@@ -4,12 +4,12 @@ A Shiny application for tracking time spent on projects and tasks with persisten
 
 ## Features
 
-- **Active Timer**: Start/stop timers for projects and tasks with live elapsed time
-- **Manual Entry**: Add time entries manually with date/time validation
-- **Time Log**: View, filter (by date, project, task), and export time entries
-- **Summary & Reports**: Track current week/month hours and analyze historical data
+- **Active Timer**: Start/stop timers with live elapsed time and long-duration confirmations (>8hrs)
+- **Manual Entry**: Add time entries with date/time validation and project-specific task selection
+- **Time Log**: View, filter (by date, project, task), edit, delete, and export entries
+- **Summary & Reports**: Track current week/month hours with color-coded widgets
 - **Settings**: Create and manage projects and tasks
-- **CSV Export**: Download filtered time logs for external analysis
+- **Data Management**: CSV export, edit/delete entries with confirmation dialogs
 
 ## Installation
 
@@ -79,8 +79,16 @@ Rscript test_data_io.R
 - ✅ **Project creation** - Add new projects from Settings tab
 - ✅ **Task creation** - Add new tasks to existing projects
 - ✅ **Manual entry** - Add time entries with date/time validation
+- ✅ **Dynamic task dropdowns** - Project-specific task selection
 - ✅ Automatic validation (no duplicates, non-empty names, time format)
 - ✅ Reactive dropdown updates
+
+**Phase 3 - Data Management & Validation:**
+- ✅ **Edit entries** - Modal dialog with full entry editing
+- ✅ **Delete entries** - Confirmation dialog before permanent deletion
+- ✅ **Long duration confirmation** - Prevent accidental timer stops (>8 hours)
+- ✅ Data.table by-reference updates
+- ✅ Comprehensive validation
 
 **Phase 4 - Enhanced Reporting:**
 - ✅ **CSV export** - Download filtered time logs
@@ -90,10 +98,10 @@ Rscript test_data_io.R
 - ✅ Custom date range filtering
 
 ### Coming Soon
-- Edit/delete functionality for time entries (Phase 3)
 - Excel export with formatting (Phase 5)
 - Data import (Phase 5)
 - Visualizations and charts (Phase 4)
-- Dynamic task dropdowns based on project (Phase 2)
+- Overlap detection (Phase 3)
+- Project color coding (Phase 5)
 
 See [docs/TODO.md](docs/TODO.md) for the complete feature roadmap.

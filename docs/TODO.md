@@ -1,11 +1,11 @@
 # Time Tracking App - TODO List
 
 **Last Updated:** 2025-10-06
-**Status:** Phase 1 Complete, Phases 2-6 In Progress
+**Status:** Phases 1, 2 & 3 Complete! Phase 4 Partial
 
 ## Current Implementation Status
 
-### ✅ Completed Features (Phase 1 & 2 Complete, Phase 4 Partial)
+### ✅ Completed Features (Phases 1-3 Complete + Phase 4 Partial)
 - [x] Core timer functionality (start/stop)
 - [x] Basic data storage with data.table
 - [x] Active timer persists across app restarts
@@ -19,9 +19,13 @@
 - [x] **Project creation from Settings tab** (Phase 2)
 - [x] **Task creation from Settings tab** (Phase 2)
 - [x] **Manual entry form submission** (Phase 2)
+- [x] **Dynamic task dropdown based on project** (Phase 2)
 - [x] **CSV export for Time Log** (Phase 4)
 - [x] **Task filter for Time Log** (Phase 4)
 - [x] **Weekly/Monthly summary statistics** (Phase 4)
+- [x] **Edit time entry functionality** (Phase 3)
+- [x] **Delete time entry functionality** (Phase 3)
+- [x] **Long duration timer confirmation (>8 hrs)** (Phase 3)
 
 ---
 
@@ -89,67 +93,60 @@
 
 ### 🟡 MEDIUM - Moderate Complexity (3-5 hours each)
 
-#### 6. Edit Time Entry Functionality
-- [ ] Add edit button/icon to Time Log table
-- [ ] Create modal dialog with pre-filled form
-- [ ] Update entry using data.table `:=` operator
-- [ ] Recalculate hours on save
-- [ ] Validate updated data
-- [ ] Refresh table after edit
+#### 6. ✅ Edit Time Entry Functionality (COMPLETED)
+- [x] Add edit button to Time Log table
+- [x] Create modal dialog with pre-filled form
+- [x] Update entry using data.table `:=` operator
+- [x] Recalculate hours on save
+- [x] Validate updated data (time format, end > start)
+- [x] Refresh table after edit
+- [x] Dynamic task dropdown in edit modal
 
-**Implementation Hint:**
-```r
-rv$time_log[log_id == selected_id,
-           `:=`(project = new_project,
-                task = new_task,
-                hours = as.numeric(difftime(new_end, new_start, units = "hours")))]
-```
+**Implementation:** See `app.R` lines 1088-1197. Modal dialog with full entry editing, validation, and data.table update by reference.
 
-#### 7. Delete Time Entry Functionality
-- [ ] Add delete button/icon to Time Log table
-- [ ] Show confirmation dialog with entry details
-- [ ] Remove from time_log using subsetting
-- [ ] Save after deletion
-- [ ] Show success notification
+#### 7. ✅ Delete Time Entry Functionality (COMPLETED)
+- [x] Add delete button to Time Log table
+- [x] Show confirmation dialog with entry details
+- [x] Remove from time_log using subsetting
+- [x] Save after deletion
+- [x] Show success notification
+- [x] Warning about permanent deletion
 
-**Implementation Hint:**
-```r
-rv$time_log <- rv$time_log[log_id != selected_id]
-```
+**Implementation:** See `app.R` lines 1199-1270. Confirmation dialog showing entry details before permanent deletion.
 
-#### 8. Dynamic Task Dropdown Based on Project
-- [ ] Make timer_task reactive to timer_project
-- [ ] Make manual_task reactive to manual_project
-- [ ] Filter tasks: `time_log[project == selected_project, unique(task)]`
-- [ ] Handle empty task lists gracefully
+#### 8. ✅ Dynamic Task Dropdown Based on Project (COMPLETED)
+- [x] Make timer_task reactive to timer_project
+- [x] Make manual_task reactive to manual_project
+- [x] Filter tasks: `time_log[project == selected_project, unique(task)]`
+- [x] Handle empty task lists gracefully ("No tasks available")
+- [x] Apply to both timer and manual entry forms
 
-#### 9. Add New Projects/Tasks from Timer/Manual Entry
-- [ ] Add "➕ Add new..." option to project dropdowns
-- [ ] Show conditional text input when selected
-- [ ] Validate against existing entries
-- [ ] Update dropdowns after adding
-- [ ] Seamless UX flow
+**Implementation:** See `app.R` lines 444-468. Project-specific task filtering for timer and manual entry dropdowns.
 
-#### 10. Long Duration Timer Confirmation
-- [ ] Check elapsed hours before stopping
-- [ ] Show modal if > threshold (e.g., 8 hours)
-- [ ] Allow user to confirm or cancel
-- [ ] Prevent accidental stops of multi-day timers
+#### 9. Add New Projects/Tasks from Timer/Manual Entry (SKIPPED)
+- Note: This feature was skipped as users can already add projects/tasks from the Settings tab
+- Implementing this would add UI complexity without significant UX benefit
+- Current workflow: Settings → Add Project/Task → Return to Timer/Manual Entry
 
-**Implementation Hint:**
-```r
-elapsed_hours <- as.numeric(difftime(Sys.time(), active_entry$start_datetime, units = "hours"))
-if (elapsed_hours > 8) {
-  showModal(modalDialog(title = "Confirm Stop", ...))
-}
-```
+#### 10. ✅ Long Duration Timer Confirmation (COMPLETED)
+- [x] Check elapsed hours before stopping
+- [x] Show modal if > threshold (8 hours)
+- [x] Allow user to confirm or cancel
+- [x] Prevent accidental stops of multi-day timers
+- [x] Display elapsed time in hours and minutes
+- [x] Show project/task info in confirmation
 
-#### 11. Current Week/Month Progress Widgets
-- [ ] Design value boxes or info boxes
-- [ ] Show total hours for current week
-- [ ] Show total hours for current month
-- [ ] Add to Active Timer or Summary tab
-- [ ] Update reactively
+**Implementation:** See `app.R` lines 541-610. Confirmation dialog for timers running >8 hours, preventing accidental stops.
+
+#### 11. ✅ Current Week/Month Progress Widgets (COMPLETED - see Feature #5)
+- [x] Design value boxes with color coding
+- [x] Show total hours for current week
+- [x] Show total hours for current month
+- [x] Add all-time hours display
+- [x] Add to Summary tab with styled boxes
+- [x] Update reactively using lubridate
+
+**Implementation:** Already completed as part of Feature #5 (Weekly/Monthly Summary Statistics).
 
 ---
 

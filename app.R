@@ -233,14 +233,26 @@ ui <- fluidPage(
       br(),
 
       fluidRow(
-        column(6,
+        column(3,
           downloadButton("download_csv",
                         "Download as CSV",
                         icon = icon("download"),
                         class = "btn-success")
         ),
-        column(6,
-          p("Edit and delete functionality coming soon...")
+        column(3,
+          actionButton("edit_entry",
+                      "Edit Selected",
+                      icon = icon("edit"),
+                      class = "btn-primary")
+        ),
+        column(3,
+          actionButton("delete_entry",
+                      "Delete Selected",
+                      icon = icon("trash"),
+                      class = "btn-danger")
+        ),
+        column(3,
+          p(textOutput("selected_entry_info"), style = "margin-top: 8px; font-size: 12px;")
         )
       )
     ),
@@ -441,11 +453,30 @@ server <- function(input, output, session) {
                      choices = c("All" = "all", projects))
   })
 
-  # Update task dropdowns
+  # Update timer task dropdown based on selected project
   observe({
-    tasks <- unique_tasks()
-    updateSelectInput(session, "timer_task", choices = tasks)
-    updateSelectInput(session, "manual_task", choices = tasks)
+    req(rv$time_log, input$timer_project)
+
+    tasks <- rv$time_log[project == input$timer_project, unique(task)]
+
+    if (length(tasks) == 0) {
+      tasks <- c("No tasks available")
+    }
+
+    updateSelectInput(session, "timer_task", choices = sort(tasks))
+  })
+
+  # Update manual entry task dropdown based on selected project
+  observe({
+    req(rv$time_log, input$manual_project)
+
+    tasks <- rv$time_log[project == input$manual_project, unique(task)]
+
+    if (length(tasks) == 0) {
+      tasks <- c("No tasks available")
+    }
+
+    updateSelectInput(session, "manual_task", choices = sort(tasks))
   })
 
   # Update filter_task dropdown based on selected project
@@ -523,6 +554,55 @@ server <- function(input, output, session) {
   observeEvent(input$stop_timer, {
     req(rv$active_timer_id)
 
+    # Get active timer entry
+    active_entry <- rv$time_log[log_id == rv$active_timer_id]
+    elapsed_hours <- as.numeric(difftime(Sys.time(), active_entry$start_datetime, units = "hours"))
+
+    # Check if timer has been running for more than 8 hours
+    if (elapsed_hours > 8) {
+      showModal(modalDialog(
+        title = "Confirm Stop Timer",
+        tags$p(
+          "This timer has been running for ",
+          tags$strong(sprintf("%.1f hours", elapsed_hours)),
+          " (",
+          tags$strong(sprintf("%d hours and %d minutes", floor(elapsed_hours), floor((elapsed_hours - floor(elapsed_hours)) * 60))),
+          ")."
+        ),
+        tags$p("Are you sure you want to stop it?"),
+        tags$hr(),
+        tags$p(
+          tags$strong("Project:"), active_entry$project, tags$br(),
+          tags$strong("Task:"), active_entry$task, tags$br(),
+          tags$strong("Started:"), format(active_entry$start_datetime, "%Y-%m-%d %H:%M:%S")
+        ),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton("confirm_stop_timer", "Yes, Stop Timer", class = "btn-danger")
+        ),
+        easyClose = FALSE
+      ))
+    } else {
+      # Normal stop without confirmation
+      stop_time <- Sys.time()
+      rv$time_log[log_id == rv$active_timer_id,
+                  `:=`(end_datetime = stop_time,
+                       hours = as.numeric(difftime(stop_time, start_datetime, units = "hours")))]
+
+      # Clear active timer
+      rv$active_timer_id <- NULL
+
+      # Save
+      save_time_log(rv$time_log)
+
+      showNotification("Timer stopped!", type = "message")
+    }
+  })
+
+  # Confirm stop timer (for long duration timers)
+  observeEvent(input$confirm_stop_timer, {
+    req(rv$active_timer_id)
+
     # Update the timer entry
     stop_time <- Sys.time()
     rv$time_log[log_id == rv$active_timer_id,
@@ -534,6 +614,9 @@ server <- function(input, output, session) {
 
     # Save
     save_time_log(rv$time_log)
+
+    # Close modal
+    removeModal()
 
     showNotification("Timer stopped!", type = "message")
   })
@@ -616,10 +699,19 @@ server <- function(input, output, session) {
       Start = format(start_datetime, "%Y-%m-%d %H:%M"),
       End = format(end_datetime, "%Y-%m-%d %H:%M"),
       Hours = round(hours, 2),
+      Notes = notes,
       Type = entry_type
     )]
 
-    datatable(display_dt, options = list(pageLength = 10, order = list(list(0, 'desc'))))
+    datatable(
+      display_dt,
+      selection = 'single',
+      options = list(
+        pageLength = 10,
+        order = list(list(0, 'desc'))
+      ),
+      rownames = FALSE
+    )
   })
 
   # ----------------------------------------------------------------------------
@@ -979,6 +1071,203 @@ server <- function(input, output, session) {
       fwrite(export_dt, file)
     }
   )
+
+  # ----------------------------------------------------------------------------
+  # Edit/Delete Time Entries
+  # ----------------------------------------------------------------------------
+
+  # Display selected entry info
+  output$selected_entry_info <- renderText({
+    if (length(input$time_log_table_rows_selected) > 0) {
+      paste("Selected entry ID:", input$time_log_table_rows_selected)
+    } else {
+      "No entry selected"
+    }
+  })
+
+  # Edit entry button
+  observeEvent(input$edit_entry, {
+    if (length(input$time_log_table_rows_selected) == 0) {
+      showNotification("Please select an entry to edit", type = "warning")
+      return()
+    }
+
+    # Get the filtered data to find the correct entry
+    filtered <- rv$time_log[!is.na(end_datetime)]
+    filtered <- filtered[as.Date(start_datetime) >= input$filter_start_date &
+                        as.Date(start_datetime) <= input$filter_end_date]
+
+    if (input$filter_project != "all") {
+      filtered <- filtered[project == input$filter_project]
+    }
+    if (!is.null(input$filter_task) && input$filter_task != "all") {
+      filtered <- filtered[task == input$filter_task]
+    }
+
+    # Get the selected row from filtered data
+    selected_row <- input$time_log_table_rows_selected
+    if (selected_row > nrow(filtered)) {
+      showNotification("Invalid selection", type = "error")
+      return()
+    }
+
+    entry <- filtered[selected_row]
+
+    # Show edit modal
+    showModal(modalDialog(
+      title = paste("Edit Entry #", entry$log_id),
+      selectInput("edit_project", "Project:",
+                 choices = unique_projects(),
+                 selected = entry$project),
+      selectInput("edit_task", "Task:",
+                 choices = rv$time_log[project == entry$project, unique(task)],
+                 selected = entry$task),
+      dateInput("edit_start_date", "Start Date:",
+               value = as.Date(entry$start_datetime)),
+      textInput("edit_start_time", "Start Time (HH:MM):",
+               value = format(entry$start_datetime, "%H:%M")),
+      dateInput("edit_end_date", "End Date:",
+               value = as.Date(entry$end_datetime)),
+      textInput("edit_end_time", "End Time (HH:MM):",
+               value = format(entry$end_datetime, "%H:%M")),
+      textAreaInput("edit_notes", "Notes:",
+                   value = entry$notes, rows = 3),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("save_edit", "Save Changes", class = "btn-primary")
+      ),
+      easyClose = FALSE
+    ))
+
+    # Store the log_id for saving
+    rv$editing_entry_id <- entry$log_id
+  })
+
+  # Update edit task dropdown when project changes
+  observe({
+    req(input$edit_project)
+    tasks <- rv$time_log[project == input$edit_project, unique(task)]
+    updateSelectInput(session, "edit_task", choices = sort(tasks))
+  })
+
+  # Save edited entry
+  observeEvent(input$save_edit, {
+    req(rv$editing_entry_id)
+
+    tryCatch({
+      # Parse datetimes
+      start_dt <- as.POSIXct(paste(input$edit_start_date, input$edit_start_time),
+                            format = "%Y-%m-%d %H:%M")
+      end_dt <- as.POSIXct(paste(input$edit_end_date, input$edit_end_time),
+                          format = "%Y-%m-%d %H:%M")
+
+      # Validate
+      if (is.na(start_dt) || is.na(end_dt)) {
+        showNotification("Invalid time format", type = "error")
+        return()
+      }
+
+      if (end_dt <= start_dt) {
+        showNotification("End time must be after start time!", type = "error")
+        return()
+      }
+
+      # Update entry
+      rv$time_log[log_id == rv$editing_entry_id,
+                 `:=`(project = input$edit_project,
+                      task = input$edit_task,
+                      start_datetime = start_dt,
+                      end_datetime = end_dt,
+                      hours = as.numeric(difftime(end_dt, start_dt, units = "hours")),
+                      notes = trimws(input$edit_notes))]
+
+      # Save
+      save_time_log(rv$time_log)
+
+      # Clear editing ID
+      rv$editing_entry_id <- NULL
+
+      # Close modal
+      removeModal()
+
+      showNotification("Entry updated successfully!", type = "message")
+    }, error = function(e) {
+      showNotification(paste("Error updating entry:", e$message), type = "error")
+    })
+  })
+
+  # Delete entry button
+  observeEvent(input$delete_entry, {
+    if (length(input$time_log_table_rows_selected) == 0) {
+      showNotification("Please select an entry to delete", type = "warning")
+      return()
+    }
+
+    # Get the filtered data to find the correct entry
+    filtered <- rv$time_log[!is.na(end_datetime)]
+    filtered <- filtered[as.Date(start_datetime) >= input$filter_start_date &
+                        as.Date(start_datetime) <= input$filter_end_date]
+
+    if (input$filter_project != "all") {
+      filtered <- filtered[project == input$filter_project]
+    }
+    if (!is.null(input$filter_task) && input$filter_task != "all") {
+      filtered <- filtered[task == input$filter_task]
+    }
+
+    # Get the selected row
+    selected_row <- input$time_log_table_rows_selected
+    if (selected_row > nrow(filtered)) {
+      showNotification("Invalid selection", type = "error")
+      return()
+    }
+
+    entry <- filtered[selected_row]
+
+    # Show confirmation dialog
+    showModal(modalDialog(
+      title = "Confirm Delete",
+      tags$p("Are you sure you want to delete this entry?"),
+      tags$hr(),
+      tags$p(
+        tags$strong("ID:"), entry$log_id, tags$br(),
+        tags$strong("Project:"), entry$project, tags$br(),
+        tags$strong("Task:"), entry$task, tags$br(),
+        tags$strong("Hours:"), round(entry$hours, 2), tags$br(),
+        tags$strong("Start:"), format(entry$start_datetime, "%Y-%m-%d %H:%M"), tags$br(),
+        tags$strong("End:"), format(entry$end_datetime, "%Y-%m-%d %H:%M")
+      ),
+      tags$p(class = "text-danger", "This action cannot be undone!"),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("confirm_delete", "Yes, Delete", class = "btn-danger")
+      ),
+      easyClose = FALSE
+    ))
+
+    # Store the log_id for deletion
+    rv$deleting_entry_id <- entry$log_id
+  })
+
+  # Confirm delete
+  observeEvent(input$confirm_delete, {
+    req(rv$deleting_entry_id)
+
+    # Remove entry
+    rv$time_log <- rv$time_log[log_id != rv$deleting_entry_id]
+    setkey(rv$time_log, log_id)
+
+    # Save
+    save_time_log(rv$time_log)
+
+    # Clear deleting ID
+    rv$deleting_entry_id <- NULL
+
+    # Close modal
+    removeModal()
+
+    showNotification("Entry deleted successfully!", type = "message")
+  })
 }
 
 # ==============================================================================
