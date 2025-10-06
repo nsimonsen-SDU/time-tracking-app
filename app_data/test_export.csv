@@ -1,0 +1,6 @@
+log_id,project,task,start_datetime,end_datetime,hours,notes,entry_type
+1,Test Project,Development,2025-10-06 09:00:00,2025-10-06 12:30:00,3.5,Test manual entry,manual
+2,Project A,Task 2,2025-10-06 08:32:58,2025-10-06 09:32:58,1,Entry 2,timer
+3,Project B,Task 3,2025-10-06 07:32:58,2025-10-06 08:32:58,1,Entry 3,timer
+4,Project A,Task 4,2025-10-06 06:32:58,2025-10-06 07:32:58,1,Entry 4,timer
+5,Project B,Task 5,2025-10-06 05:32:58,2025-10-06 06:32:58,1,Entry 5,timer

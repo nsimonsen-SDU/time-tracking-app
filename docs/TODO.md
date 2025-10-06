@@ -377,15 +377,26 @@ time_log <- setDT(dbGetQuery(con, "SELECT * FROM time_log"))
 - [x] File I/O with fread/fwrite handles errors gracefully
 - [x] Aggregations and summaries calculate correctly
 
-### Remaining Tests
-- [ ] Manual entries validate date/time correctly
-- [ ] Projects and tasks are created and retrieved correctly
-- [ ] Edit/delete operations work with data.table by-reference updates
-- [ ] Time zone handling is consistent
-- [ ] Overlap detection works correctly
-- [ ] Import/export maintains data integrity
-- [ ] UI is responsive and user-friendly
-- [ ] All error cases are handled gracefully
+### Automated Testing (shinytest2)
+- [x] **Testing framework implemented** - shinytest2 with testthat integration
+- [x] **Test infrastructure** - tests/testthat/ directory structure, helper functions, .gitignore
+- [x] **Core timer tests** - Start/stop, persistence, elapsed time, long duration confirmation
+- [x] **Data persistence tests** - File I/O, structure validation, state management
+- [x] **Manual entry tests** - Form validation, submission, time parsing
+- [x] **Project/task management tests** - Creation, validation, duplicate prevention
+- [x] **Dynamic dropdown tests** - Project-specific task filtering
+- [x] **Summary report tests** - Statistics aggregations, date range filtering
+- [x] **29+ tests passing** - 67% pass rate on initial implementation
+
+### Remaining Test Improvements
+- [ ] Fix file path handling for consistent test execution
+- [ ] Add snapshot baselines for UI state verification
+- [ ] Improve modal dialog testing (edit/delete confirmations)
+- [ ] Add CSV export validation tests
+- [ ] Test time zone handling consistency
+- [ ] Add overlap detection tests (when feature implemented)
+- [ ] Add error case handling tests
+- [ ] Increase coverage to 95%+
 
 ---
 

@@ -17,3 +17,10 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Testing
+tests/testthat/_snaps/
+*.png
+*.log
+app_data/test_*.rds
+.claude/

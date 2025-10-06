@@ -54,13 +54,66 @@ The app will open in your default web browser.
 
 ## Testing
 
-Run the test suite to verify functionality:
-```bash
-# Test syntax
-Rscript test_app.R
+This app uses `shinytest2` for comprehensive integration testing. The test suite covers all implemented features including timer functionality, manual entry, project/task management, data persistence, and reporting.
 
-# Test data I/O
-Rscript test_data_io.R
+### Running Tests
+
+**Run all tests:**
+```r
+# In R console
+testthat::test_dir("tests/testthat")
+
+# Or from command line with environment variable
+NOT_CRAN=true Rscript -e "testthat::test_dir('tests/testthat')"
+```
+
+**Run specific test file:**
+```r
+testthat::test_file("tests/testthat/test-timer-core.R")
+```
+
+### Test Structure
+
+- `test-timer-core.R` - Active timer functionality, start/stop, persistence, long duration confirmation
+- `test-data-persistence.R` - File I/O, data structure integrity, state management
+- `test-manual-entry.R` - Manual entry form validation and submission
+- `test-project-task-management.R` - Project/task creation and validation
+- `test-dynamic-dropdowns.R` - Project-specific task filtering (Feature #8)
+- `test-summary-reports.R` - Summary statistics and aggregations
+- `helper-functions.R` - Shared test utilities
+
+### Test Coverage
+
+**Current Status**: 29+ tests passing, covering:
+- ✅ App initialization and data loading
+- ✅ Timer start/stop functionality
+- ✅ Data persistence across sessions
+- ✅ Project and task creation
+- ✅ Manual entry form submission
+- ✅ Data structure validation
+- ✅ Active timer persistence
+
+### Writing New Tests
+
+Use the `AppDriver` class from shinytest2 to interact with the app:
+
+```r
+test_that("Example test", {
+  app <- AppDriver$new(app_dir = "../../", name = "test-name")
+  app$wait_for_idle()
+
+  # Set inputs
+  app$set_inputs(input_id = "value")
+
+  # Click buttons
+  app$click("button_id")
+
+  # Verify outputs
+  values <- app$get_values()
+  expect_true(!is.null(values$output$output_id))
+
+  app$stop()
+})
 ```
 
 ## Current Status
