@@ -23,16 +23,21 @@ create_test_app <- function(cleanup_before = TRUE) {
 
 #' Clean up test data files
 cleanup_test_data <- function() {
-  # Remove test RDS files
+  # Remove test RDS files from both possible locations
   test_files <- c(
-    "app_data/time_log.rds",
-    "app_data/test_time_log.rds"
+    "../../app_data/time_log.rds",  # Project root (where app runs)
+    "app_data/time_log.rds"          # Local test directory
   )
 
   for (file in test_files) {
     if (file.exists(file)) {
       file.remove(file)
     }
+  }
+
+  # Also remove test directory app_data if it exists
+  if (dir.exists("app_data")) {
+    unlink("app_data", recursive = TRUE)
   }
 
   invisible(TRUE)
@@ -151,19 +156,20 @@ get_table_data <- function(app, output_id = "time_log_table") {
 
 #' Save test data to RDS file
 #' @param time_log data.table to save
-#' @param filename Filename (default: app_data/time_log.rds)
-save_test_data <- function(time_log, filename = "app_data/time_log.rds") {
-  if (!dir.exists("app_data")) {
-    dir.create("app_data", recursive = TRUE)
+#' @param filename Filename (default: ../../app_data/time_log.rds - project root)
+save_test_data <- function(time_log, filename = "../../app_data/time_log.rds") {
+  dir_name <- dirname(filename)
+  if (!dir.exists(dir_name)) {
+    dir.create(dir_name, recursive = TRUE)
   }
   saveRDS(time_log, filename)
   invisible(TRUE)
 }
 
 #' Load test data from RDS file
-#' @param filename Filename (default: app_data/time_log.rds)
+#' @param filename Filename (default: ../../app_data/time_log.rds - project root)
 #' @return data.table with time log data
-load_test_data <- function(filename = "app_data/time_log.rds") {
+load_test_data <- function(filename = "../../app_data/time_log.rds") {
   if (file.exists(filename)) {
     return(readRDS(filename))
   }
