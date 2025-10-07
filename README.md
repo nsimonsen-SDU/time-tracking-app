@@ -180,6 +180,22 @@ test_that("Example test", {
 - ✅ **Password Management** - Change password functionality
 - ✅ **Session Management** - Automatic timeout and secure sessions
 
+## Production Deployment
+
+For deploying to UCloud or other production servers with shiny-server:
+
+```bash
+# On your server
+cd /srv/shiny-server/time-tracking-app
+sudo bash ucloud/deploy.sh
+```
+
+See [ucloud/README.md](ucloud/README.md) for complete deployment documentation including:
+- System requirements
+- Shiny-server configuration
+- Security considerations
+- Troubleshooting guide
+
 ### Coming Soon
 - Excel export with formatting (Phase 5)
 - Data import (Phase 5)

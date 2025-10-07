@@ -7,12 +7,12 @@ library(shinymanager)
 create_db(
   credentials_data = data.frame(
     user = c("admin"),
-    password = c("admin123"),  # Change this password after first login!
+    password = c("admin123"), # Change this password after first login!
     admin = c(TRUE),
     stringsAsFactors = FALSE
   ),
   sqlite_path = "app_data/credentials.sqlite",
-  passphrase = "timetracking_secure_passphrase_2025"  # Change this to a secure passphrase
+  passphrase = "timetracking_secure_passphrase_2025" # Change this to a secure passphrase
 )
 
 cat("\n==============================================\n")
