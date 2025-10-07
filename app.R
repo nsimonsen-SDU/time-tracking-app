@@ -434,7 +434,8 @@ ui <- fluidPage(
 ui <- secure_app(ui,
                  theme = "flatly",
                  language = "en",
-                 choose_language = FALSE)
+                 choose_language = FALSE,
+                 enable_admin = TRUE)
 
 # ==============================================================================
 # SERVER LOGIC
