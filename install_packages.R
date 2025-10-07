@@ -7,7 +7,9 @@ packages <- c(
   "DT",
   "shinyjs",
   "testthat",
-  "shinytest2"
+  "shinytest2",
+  "shinymanager",
+  "scrypt"
 )
 
 for (pkg in packages) {

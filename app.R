@@ -7,6 +7,7 @@ library(data.table)
 library(lubridate)
 library(DT)
 library(shinyjs)
+library(shinymanager)
 
 # ==============================================================================
 # HELPER FUNCTIONS
@@ -84,6 +85,13 @@ save_time_log <- function(time_log) {
 
 ui <- fluidPage(
   useShinyjs(),
+
+  # Add logout button in the header
+  tags$div(
+    style = "position: absolute; top: 10px; right: 15px; z-index: 1000;",
+    actionButton("logout", "Logout", icon = icon("sign-out-alt"), class = "btn-sm")
+  ),
+
   titlePanel("Time Tracking App"),
 
   tabsetPanel(
@@ -366,11 +374,67 @@ ui <- fluidPage(
 
       br(),
       hr(),
+
+      # User Management Section (Admin Only)
+      h3("User Management"),
+      p(class = "text-muted", "Add and manage user accounts (Admin only)"),
+
+      fluidRow(
+        column(6,
+          h4("Add New User"),
+          textInput("new_username",
+                   "Username:",
+                   width = "100%"),
+          passwordInput("new_user_password",
+                       "Password:",
+                       width = "100%"),
+          checkboxInput("new_user_admin",
+                       "Administrator privileges",
+                       value = FALSE),
+          actionButton("add_user",
+                      "Add User",
+                      icon = icon("user-plus"),
+                      class = "btn-success",
+                      width = "100%")
+        ),
+        column(6,
+          h4("Change Password"),
+          passwordInput("current_password",
+                       "Current Password:",
+                       width = "100%"),
+          passwordInput("new_password",
+                       "New Password:",
+                       width = "100%"),
+          passwordInput("confirm_password",
+                       "Confirm New Password:",
+                       width = "100%"),
+          actionButton("change_password",
+                      "Change Password",
+                      icon = icon("key"),
+                      class = "btn-warning",
+                      width = "100%")
+        )
+      ),
+
+      br(),
+      hr(),
+      h4("Existing Users"),
+      p(class = "text-muted", "List of all registered users"),
+      DTOutput("users_table"),
+
+      br(),
+      hr(),
       h4("Data Management"),
       p("Export and import functionality coming soon...")
     )
   )
 )
+
+# Wrap UI with authentication
+ui <- secure_app(ui,
+                 theme = "flatly",
+                 language = "en",
+                 choose_language = FALSE)
 
 # ==============================================================================
 # SERVER LOGIC
@@ -379,12 +443,30 @@ ui <- fluidPage(
 server <- function(input, output, session) {
 
   # ----------------------------------------------------------------------------
+  # Authentication
+  # ----------------------------------------------------------------------------
+
+  # Secure server with credentials check
+  res_auth <- secure_server(
+    check_credentials = check_credentials(
+      db = "app_data/credentials.sqlite",
+      passphrase = "timetracking_secure_passphrase_2025"
+    )
+  )
+
+  # Handle logout
+  observeEvent(input$logout, {
+    logout_user()
+  })
+
+  # ----------------------------------------------------------------------------
   # Reactive Values
   # ----------------------------------------------------------------------------
 
   rv <- reactiveValues(
     time_log = NULL,
-    active_timer_id = NULL
+    active_timer_id = NULL,
+    current_user = NULL
   )
 
   # ----------------------------------------------------------------------------
@@ -1267,6 +1349,136 @@ server <- function(input, output, session) {
     removeModal()
 
     showNotification("Entry deleted successfully!", type = "message")
+  })
+
+  # ----------------------------------------------------------------------------
+  # User Management
+  # ----------------------------------------------------------------------------
+
+  # Display users table
+  output$users_table <- renderDT({
+    # Read credentials from database
+    tryCatch({
+      con <- DBI::dbConnect(RSQLite::SQLite(), "app_data/credentials.sqlite")
+      users <- DBI::dbReadTable(con, "credentials")
+      DBI::dbDisconnect(con)
+
+      # Display only necessary columns, hide password
+      display_users <- users[, c("user", "admin", "start", "expire")]
+      datatable(display_users,
+                options = list(pageLength = 10, searching = TRUE),
+                rownames = FALSE,
+                selection = "single")
+    }, error = function(e) {
+      datatable(data.frame(Message = "Unable to load users"),
+                options = list(dom = 't'),
+                rownames = FALSE)
+    })
+  })
+
+  # Add new user
+  observeEvent(input$add_user, {
+    req(input$new_username, input$new_user_password)
+
+    # Validate inputs
+    if (nchar(input$new_username) < 3) {
+      showNotification("Username must be at least 3 characters", type = "error")
+      return()
+    }
+
+    if (nchar(input$new_user_password) < 6) {
+      showNotification("Password must be at least 6 characters", type = "error")
+      return()
+    }
+
+    # Check if user is admin
+    if (!isTRUE(res_auth$admin)) {
+      showNotification("Only administrators can add users", type = "error")
+      return()
+    }
+
+    tryCatch({
+      # Create new credentials
+      new_cred <- data.frame(
+        user = input$new_username,
+        password = input$new_user_password,
+        admin = input$new_user_admin,
+        stringsAsFactors = FALSE
+      )
+
+      # Add to database
+      create_db(
+        credentials_data = new_cred,
+        sqlite_path = "app_data/credentials.sqlite",
+        passphrase = "timetracking_secure_passphrase_2025"
+      )
+
+      showNotification(paste("User", input$new_username, "added successfully!"),
+                      type = "message")
+
+      # Clear inputs
+      updateTextInput(session, "new_username", value = "")
+      updateTextInput(session, "new_user_password", value = "")
+      updateCheckboxInput(session, "new_user_admin", value = FALSE)
+
+    }, error = function(e) {
+      showNotification(paste("Error adding user:", e$message), type = "error")
+    })
+  })
+
+  # Change password
+  observeEvent(input$change_password, {
+    req(input$current_password, input$new_password, input$confirm_password)
+
+    # Validate inputs
+    if (nchar(input$new_password) < 6) {
+      showNotification("New password must be at least 6 characters", type = "error")
+      return()
+    }
+
+    if (input$new_password != input$confirm_password) {
+      showNotification("New passwords do not match", type = "error")
+      return()
+    }
+
+    tryCatch({
+      # Get current user
+      current_user <- res_auth$user
+
+      # Verify current password
+      check_result <- check_credentials(
+        db = "app_data/credentials.sqlite",
+        passphrase = "timetracking_secure_passphrase_2025"
+      )(data.frame(user = current_user, password = input$current_password))
+
+      if (!check_result$result) {
+        showNotification("Current password is incorrect", type = "error")
+        return()
+      }
+
+      # Update password in database
+      con <- DBI::dbConnect(RSQLite::SQLite(), "app_data/credentials.sqlite")
+
+      # Hash new password using scrypt
+      hashed_password <- scrypt::hashPassword(input$new_password)
+
+      # Update password
+      DBI::dbExecute(con,
+                    "UPDATE credentials SET password = ? WHERE user = ?",
+                    params = list(hashed_password, current_user))
+
+      DBI::dbDisconnect(con)
+
+      showNotification("Password changed successfully!", type = "message")
+
+      # Clear inputs
+      updateTextInput(session, "current_password", value = "")
+      updateTextInput(session, "new_password", value = "")
+      updateTextInput(session, "confirm_password", value = "")
+
+    }, error = function(e) {
+      showNotification(paste("Error changing password:", e$message), type = "error")
+    })
   })
 }
 

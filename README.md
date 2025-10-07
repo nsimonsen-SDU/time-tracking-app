@@ -4,11 +4,12 @@ A Shiny application for tracking time spent on projects and tasks with persisten
 
 ## Features
 
+- **User Authentication**: Secure login/logout with encrypted credentials and user management
 - **Active Timer**: Start/stop timers with live elapsed time and long-duration confirmations (>8hrs)
 - **Manual Entry**: Add time entries with date/time validation and project-specific task selection
 - **Time Log**: View, filter (by date, project, task), edit, delete, and export entries
 - **Summary & Reports**: Track current week/month hours with color-coded widgets
-- **Settings**: Create and manage projects and tasks
+- **Settings**: Create and manage projects, tasks, and user accounts
 - **Data Management**: CSV export, edit/delete entries with confirmation dialogs
 
 ## Installation
@@ -24,6 +25,19 @@ Required packages:
 - lubridate
 - DT
 - shinyjs
+- shinymanager
+- scrypt
+
+2. Create the credentials database:
+```r
+Rscript setup_credentials.R
+```
+
+This creates a default admin account:
+- **Username:** `admin`
+- **Password:** `admin123`
+
+⚠️ **IMPORTANT:** Change the default password after first login!
 
 ## Running the App
 
@@ -42,8 +56,17 @@ The app will open in your default web browser.
 ## Data Storage
 
 - Time log data is stored in `app_data/time_log.rds`
+- User credentials stored in encrypted `app_data/credentials.sqlite`
 - Data persists across app sessions
 - Active timers are automatically restored on app restart
+
+## Authentication
+
+The app requires login for security. See [AUTHENTICATION.md](AUTHENTICATION.md) for complete documentation including:
+- User management (adding/removing users)
+- Password changes
+- Security best practices
+- Troubleshooting
 
 ## Architecture
 
@@ -80,6 +103,7 @@ testthat::test_file("tests/testthat/test-timer-core.R")
 - `test-project-task-management.R` - Project/task creation and validation
 - `test-dynamic-dropdowns.R` - Project-specific task filtering (Feature #8)
 - `test-summary-reports.R` - Summary statistics and aggregations
+- `test-authentication.R` - User authentication, login/logout, user management
 - `helper-functions.R` - Shared test utilities
 
 ### Test Coverage
@@ -149,6 +173,12 @@ test_that("Example test", {
 - ✅ **Weekly/Monthly summaries** - Current week, month, and all-time hours
 - ✅ Summary reports by project, task, and day
 - ✅ Custom date range filtering
+
+**Security & Authentication:**
+- ✅ **User Authentication** - Secure login/logout with encrypted credentials
+- ✅ **User Management** - Admin can add/manage users
+- ✅ **Password Management** - Change password functionality
+- ✅ **Session Management** - Automatic timeout and secure sessions
 
 ### Coming Soon
 - Excel export with formatting (Phase 5)

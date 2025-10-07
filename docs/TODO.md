@@ -1,11 +1,11 @@
 # Time Tracking App - TODO List
 
-**Last Updated:** 2025-10-06
-**Status:** Phases 1, 2 & 3 Complete! Phase 4 Partial
+**Last Updated:** 2025-10-07
+**Status:** Phases 1-4 Complete! User Authentication Added!
 
 ## Current Implementation Status
 
-### ✅ Completed Features (Phases 1-3 Complete + Phase 4 Partial)
+### ✅ Completed Features (Phases 1-4 Complete!)
 - [x] Core timer functionality (start/stop)
 - [x] Basic data storage with data.table
 - [x] Active timer persists across app restarts
@@ -26,6 +26,9 @@
 - [x] **Edit time entry functionality** (Phase 3)
 - [x] **Delete time entry functionality** (Phase 3)
 - [x] **Long duration timer confirmation (>8 hrs)** (Phase 3)
+- [x] **User Authentication (Login/Logout)** (MEDIUM Feature #12)
+- [x] **User account management (Admin)** (MEDIUM Feature #12)
+- [x] **Password change functionality** (MEDIUM Feature #12)
 
 ---
 
@@ -148,11 +151,25 @@
 
 **Implementation:** Already completed as part of Feature #5 (Weekly/Monthly Summary Statistics).
 
+#### 12. ✅ User Authentication (Login/Logout) (COMPLETED)
+- [x] Implement authentication using shinymanager package
+- [x] Create login/logout UI
+- [x] Add user registration form (username, password)
+- [x] Store user credentials securely (hashed passwords)
+- [x] Session management and timeout handling
+- [x] Password change functionality
+- [x] Single-user mode (no shared data yet)
+- [ ] Remember me option (optional enhancement)
+
+**Implementation:** See `app.R` lines 400-410 (secure_server), 1354-1482 (user management). Uses shinymanager with encrypted SQLite database. Credentials stored with scrypt password hashing. Admin users can add new users from Settings tab. All users can change their password. Logout button in top-right corner. Setup script: `setup_credentials.R`. Documentation: `AUTHENTICATION.md`.
+
+**Note:** This adds authentication for security but keeps data single-user (no multi-user collaboration yet). Multi-user data isolation requires Feature #25.
+
 ---
 
 ### 🟠 MEDIUM-HARD - Complex Features (6-10 hours each)
 
-#### 12. Archive/Delete Projects/Tasks with Warnings
+#### 13. Archive/Delete Projects/Tasks with Warnings
 - [ ] Check if project/task has existing entries
 - [ ] Count affected entries
 - [ ] Show warning dialog with impact details
@@ -160,7 +177,7 @@
 - [ ] Implement soft delete (add `archived` flag)
 - [ ] Filter out archived items in dropdowns
 
-#### 13. Time Entry Overlap Detection
+#### 14. Time Entry Overlap Detection
 - [ ] Implement overlap checking algorithm
 - [ ] Use data.table ordering and `shift()` function
 - [ ] Show optional warning (non-blocking)
@@ -173,14 +190,14 @@ setorder(time_log, start_datetime)
 time_log[, overlaps := shift(end_datetime, type = "lag") > start_datetime]
 ```
 
-#### 14. Project Color Coding
+#### 15. Project Color Coding
 - [ ] Add color field to projects (reference table or in time_log)
 - [ ] Create color picker UI (use colourpicker package)
 - [ ] Apply colors to timer display
 - [ ] Color-code table rows
 - [ ] Use colors in charts/visualizations
 
-#### 15. Export to Excel with Formatting
+#### 16. Export to Excel with Formatting
 - [ ] Install and use `openxlsx` or `writexl` package
 - [ ] Create multiple worksheets (entries, summaries)
 - [ ] Format headers (bold, colors)
@@ -188,7 +205,7 @@ time_log[, overlaps := shift(end_datetime, type = "lag") > start_datetime]
 - [ ] Auto-size columns
 - [ ] Add download button
 
-#### 16. Data Import Functionality
+#### 17. Data Import Functionality
 - [ ] Create file upload UI
 - [ ] Read CSV/Excel file
 - [ ] Validate structure (required columns)
@@ -202,7 +219,7 @@ time_log[, overlaps := shift(end_datetime, type = "lag") > start_datetime]
 
 ### 🔴 HARD - Advanced Features (10+ hours each)
 
-#### 17. Hourly Rate Tracking and Billing
+#### 18. Hourly Rate Tracking and Billing
 - [ ] Add hourly_rate field (to projects or time_log)
 - [ ] Create rate management UI
 - [ ] Calculate billing: `hours * hourly_rate`
@@ -216,7 +233,7 @@ time_log[, overlaps := shift(end_datetime, type = "lag") > start_datetime]
 time_log[, billing := hours * hourly_rate]
 ```
 
-#### 18. Pause/Resume Timer (Breaks)
+#### 19. Pause/Resume Timer (Breaks)
 - [ ] Modify data structure for time segments
 - [ ] Track pause periods separately
 - [ ] Calculate net time (total - breaks)
@@ -225,7 +242,7 @@ time_log[, billing := hours * hourly_rate]
 - [ ] Handle multiple pause/resume cycles
 - [ ] Validate break logic (can't resume if not paused)
 
-#### 19. Calendar View of Time Entries
+#### 20. Calendar View of Time Entries
 - [ ] Install calendar visualization package (fullcalendar, etc.)
 - [ ] Convert time_log to calendar event format
 - [ ] Color-code events by project
@@ -234,7 +251,7 @@ time_log[, billing := hours * hourly_rate]
 - [ ] Month/week/day views
 - [ ] Drag-and-drop to reschedule (advanced)
 
-#### 20. Pomodoro Timer Integration
+#### 21. Pomodoro Timer Integration
 - [ ] Add 25-minute work interval timer
 - [ ] Implement break timers (5/15 minutes)
 - [ ] Track completed pomodoros
@@ -243,7 +260,7 @@ time_log[, billing := hours * hourly_rate]
 - [ ] Pomodoro statistics and reports
 - [ ] Customizable interval lengths
 
-#### 21. Idle Time Detection
+#### 22. Idle Time Detection
 - [ ] Implement JavaScript activity monitoring
 - [ ] Track mouse/keyboard events
 - [ ] Detect idle periods > threshold
@@ -252,7 +269,7 @@ time_log[, billing := hours * hourly_rate]
 - [ ] Save activity state
 - [ ] Client-server communication for events
 
-#### 22. Visualizations and Charts
+#### 23. Visualizations and Charts
 - [ ] Install plotly or ggplot2 packages
 - [ ] Time by project pie/bar chart
 - [ ] Trends over time line chart
@@ -261,7 +278,7 @@ time_log[, billing := hours * hourly_rate]
 - [ ] Interactive filters on charts
 - [ ] Export charts as images
 
-#### 23. Goal Setting and Progress Tracking
+#### 24. Goal Setting and Progress Tracking
 - [ ] Create goals UI (target hours per period)
 - [ ] Store goals in separate table
 - [ ] Calculate progress vs. goals
@@ -270,16 +287,20 @@ time_log[, billing := hours * hourly_rate]
 - [ ] Historical goal tracking
 - [ ] Achievement badges (gamification)
 
-#### 24. Multi-User Support with Authentication
-- [ ] Implement authentication (shinymanager or custom)
-- [ ] User registration/login UI
-- [ ] User-specific data filtering
-- [ ] User session management
-- [ ] Role-based permissions (admin/user)
+#### 25. Multi-User Support and Collaboration
+- [ ] **Requires:** User Authentication (Feature #12) must be implemented first
+- [ ] User-specific data filtering and isolation
 - [ ] Shared projects with collaborators
-- [ ] Activity audit log
+- [ ] Role-based permissions (admin/user/viewer)
+- [ ] Invite users to projects
+- [ ] Collaborative time tracking on shared projects
+- [ ] Activity audit log (who did what, when)
+- [ ] Team dashboard and aggregated reports
+- [ ] User management interface (admin only)
 
-#### 25. Database Backend (SQLite/PostgreSQL)
+**Note:** This builds on Feature #12 (Authentication) to add multi-user collaboration capabilities.
+
+#### 26. Database Backend (SQLite/PostgreSQL)
 - [ ] Install DBI, RSQLite, or RPostgres packages
 - [ ] Design database schema
 - [ ] Create connection pool
