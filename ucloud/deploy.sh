@@ -44,6 +44,7 @@ echo "This will take several minutes, please be patient..."
 echo ""
 
 # Run the R package installation script as current user
+cd time-tracking-app
 Rscript install_packages.R
 
 if [ $? -eq 0 ]; then
