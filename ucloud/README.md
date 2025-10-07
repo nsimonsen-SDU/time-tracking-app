@@ -37,8 +37,10 @@ This script will:
 1. ✅ Update system package lists
 2. ✅ Install required system dependencies (libssl, libcurl, libsqlite3, etc.)
 3. ✅ Install all required R packages
-4. ✅ Create credentials database with default admin user
+4. ✅ Create credentials database with default admin user (if not exists)
 5. ✅ Set proper file permissions
+
+**Note:** The script is fully automated and requires no user interaction. If a credentials database already exists, it will be preserved.
 
 ### 3. Configure Shiny-Server
 

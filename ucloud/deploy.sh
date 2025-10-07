@@ -69,16 +69,7 @@ echo "Step 4: Setting up credentials database..."
 
 # Check if credentials database already exists
 if [ -f "app_data/credentials.sqlite" ]; then
-    echo "⚠️  Credentials database already exists."
-    read -p "Do you want to recreate it? This will delete existing users. (y/N): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        rm app_data/credentials.sqlite
-        su - "$ACTUAL_USER" -c "cd $(pwd) && Rscript setup_credentials.R"
-        echo "✓ Credentials database recreated"
-    else
-        echo "✓ Keeping existing credentials database"
-    fi
+    echo "✓ Using existing credentials database"
 else
     su - "$ACTUAL_USER" -c "cd $(pwd) && Rscript setup_credentials.R"
     echo "✓ Credentials database created"
