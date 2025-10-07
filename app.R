@@ -564,6 +564,7 @@ server <- function(input, output, session) {
   # Update filter_task dropdown based on selected project
   observe({
     req(rv$time_log)
+    req(input$filter_project)
 
     if (input$filter_project == "all") {
       # Show all tasks if "All" projects selected
