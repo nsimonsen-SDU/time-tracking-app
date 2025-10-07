@@ -13,15 +13,8 @@ echo "Time Tracking App - UCloud Deployment"
 echo "=========================================="
 echo ""
 
-# Check if running as root or with sudo
-if [ "$EUID" -ne 0 ]; then
-    echo "⚠️  This script requires sudo privileges for system package installation."
-    echo "Please run with: sudo bash ucloud/deploy.sh"
-    exit 1
-fi
-
 echo "Step 1: Updating package lists..."
-apt-get update -qq
+sudo apt-get update -qq
 
 echo ""
 echo "Step 2: Installing system dependencies..."
@@ -29,7 +22,7 @@ echo "This may take a few minutes..."
 echo ""
 
 # Install system libraries required for R packages
-apt-get install -y -qq \
+sudo apt-get install -y -qq \
     libssl-dev \
     libcurl4-openssl-dev \
     libxml2-dev \
@@ -50,10 +43,8 @@ echo "Step 3: Installing R packages..."
 echo "This will take several minutes, please be patient..."
 echo ""
 
-# Run the R package installation script
-# Use the actual user (not root) to install packages in their library
-ACTUAL_USER="${SUDO_USER:-$USER}"
-su - "$ACTUAL_USER" -c "cd $(pwd) && Rscript install_packages.R"
+# Run the R package installation script as current user
+Rscript install_packages.R
 
 if [ $? -eq 0 ]; then
     echo ""
@@ -71,7 +62,7 @@ echo "Step 4: Setting up credentials database..."
 if [ -f "app_data/credentials.sqlite" ]; then
     echo "✓ Using existing credentials database"
 else
-    su - "$ACTUAL_USER" -c "cd $(pwd) && Rscript setup_credentials.R"
+    Rscript setup_credentials.R
     echo "✓ Credentials database created"
 fi
 
@@ -79,7 +70,8 @@ echo ""
 echo "Step 5: Setting permissions..."
 
 # Ensure the app directory has proper permissions for shiny-server
-chown -R "$ACTUAL_USER:$ACTUAL_USER" .
+# Using sudo for chown, but running as current user preserves ownership
+sudo chown -R "$USER:$USER" .
 chmod -R 755 .
 chmod 700 app_data/credentials.sqlite 2>/dev/null || true
 

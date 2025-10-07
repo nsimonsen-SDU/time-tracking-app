@@ -187,7 +187,7 @@ For deploying to UCloud or other production servers with shiny-server:
 ```bash
 # On your server
 cd /srv/shiny-server/time-tracking-app
-sudo bash ucloud/deploy.sh
+bash ucloud/deploy.sh
 ```
 
 See [ucloud/README.md](ucloud/README.md) for complete deployment documentation including:

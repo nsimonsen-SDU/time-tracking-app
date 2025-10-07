@@ -30,7 +30,8 @@ cd time-tracking-app
 
 ```bash
 # On the server, in the app directory
-sudo bash ucloud/deploy.sh
+# Script uses sudo internally for system packages
+bash ucloud/deploy.sh
 ```
 
 This script will:
